@@ -357,6 +357,7 @@ ego <- enrichGO(
 )
 barplot(ego)
 
+
 kk <- enrichKEGG(gene = entrez_ids,
                  organism = 'hsa',  # 人类的KEGG代码
                  pAdjustMethod = "BH",  # 调整p值的方法
