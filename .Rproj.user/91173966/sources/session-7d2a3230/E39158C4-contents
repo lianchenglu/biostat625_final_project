@@ -1,0 +1,186 @@
+rm(list = ls())
+gc()
+library(NHANES)
+df <- NHANES[NHANES$Age >= 18 & NHANES$Age < 60, ]
+# colSums(is.na(df)) / nrow(df)
+df <- df[, which(colSums(is.na(df)) / nrow(df) < 0.3)]
+# colSums(is.na(df)) / nrow(df)
+# df$BPSysAve
+library(dplyr)
+
+df2 <- df %>% select(
+  SleepHrsNight,
+  Age,
+  DaysMentHlthBad,
+  SexNumPartnLife,
+  SexNumPartYear,
+  Race1,
+  Gender,
+  HomeRooms,
+  AlcoholYear,
+  BPDiaAve,
+  BPSysAve
+)
+
+# Hmisc::describe(df2)
+df3 <- na.omit(df2)
+df3$SleepMinNight <- df3$SleepHrsNight*60
+df3 <- df3[,-which(names(df3) %in% "SleepHrsNight")]
+library(dplyr)
+# Shapiro-Wilk normality test is performed for each numerical variable in df3
+results <- sapply(df3, function(x) {
+  if(is.numeric(x)) {
+    shapiro_test <- shapiro.test(x)
+    return(c(shapiro_test$statistic, shapiro_test$p.value))
+  } else {
+    return(c(NA, NA))
+  }
+})
+
+# Convert the result to a data box and name the column
+results_df <- as.data.frame(t(results))
+names(results_df) <- c("W", "p.value")
+
+# Add a variable name as a new column
+results_df$Variable <- rownames(results_df)
+
+# Rearrange the order of columns
+results_df <- results_df[, c("Variable", "W", "p.value")]
+
+# Calculate the corrected P-value (for example, using Bonferroni correction)
+results_df$p.adjusted <- p.adjust(results_df$p.value, method = "bonferroni")
+print(results_df)
+
+# cor(df3$BPSysAve,df3$BPDiaAve)
+psych::describe(df3)
+# psych::pairs.panels(df3)
+# hist(df3$SleepMinNight)
+# 从数据集中移除Race1和Gender变量
+df3_modified <- df3[, !(names(df3) %in% c("Race1", "Gender"))]
+
+# # 定义一个函数来检测异常值
+# is_outlier <- function(x) {
+#   limit <- mean(x, na.rm = TRUE) + 3*sd(x, na.rm = TRUE)
+#   x < (mean(x) - limit) | x > (mean(x) + limit)
+# }
+#
+# # 创建一个逻辑矩阵，标记所有异常值
+# outlier_flags <- sapply(df3, function(x) if(is.numeric(x)) is_outlier(x) else FALSE)
+#
+# # 如果一行中的任何数值型变量是异常值，则标记整行
+# rows_with_outliers <- apply(outlier_flags, 1, any)
+#
+# # 从df3中删除包含异常值的行
+# df3_clean <- df3[!rows_with_outliers, ]
+
+# 对df3_clean中的每个数值型变量进行Shapiro-Wilk正态性检验
+# results <- sapply(df3_clean, function(x) {
+#   if(is.numeric(x)) {
+#     shapiro_test <- shapiro.test(x)
+#     return(c(shapiro_test$statistic, shapiro_test$p.value))
+#   } else {
+#     return(c(NA, NA))
+#   }
+# })
+
+# # 将结果转换为数据框，并命名列
+# results_df <- as.data.frame(t(results))
+# names(results_df) <- c("W", "p.value")
+#
+# # 添加变量名作为新列
+# results_df$Variable <- rownames(results_df)
+#
+# # 重新排列列的顺序
+# results_df <- results_df[, c("Variable", "W", "p.value")]
+
+# # 查看结果
+# print(results_df)
+
+# 加载必要的库
+library(ggplot2)
+library(patchwork)
+# 初始化一个空的patchwork对象
+plot_list <- list()
+
+# 为每个数值型变量（除了Race1和Gender）绘制直方图并添加到列表
+for(var in names(df3)) {
+  if(is.numeric(df3[[var]]) && !(var %in% c("Race1", "Gender"))) {
+    p <- ggplot(df3, aes(x = .data[[var]])) +
+      geom_histogram(aes(y = after_stat(density)), binwidth = 1, fill = "blue", color = "black") +
+      geom_density(col = "red") +
+      ggtitle(paste("Histogram and Density for", var)) +
+      xlab(var) +
+      ylab("Density")
+    plot_list[[length(plot_list) + 1]] <- p
+  }
+}
+
+# 使用patchwork将所有图表组合在一起
+combined_plot <- wrap_plots(plot_list, ncol = 2)
+print(combined_plot)
+
+df3 <- data.frame(df3)
+library(dplyr)
+# 对df3中的每个数值型变量进行Shapiro-Wilk正态性检验
+results <- sapply(df3, function(x) {
+  if(is.numeric(x)) {
+    shapiro_test <- shapiro.test(x)
+    return(c(shapiro_test$statistic, shapiro_test$p.value))
+  } else {
+    return(c(NA, NA))
+  }
+})
+
+# 将结果转换为数据框，并命名列
+results_df <- as.data.frame(t(results))
+names(results_df) <- c("W", "p.value")
+
+# 添加变量名作为新列
+results_df$Variable <- rownames(results_df)
+
+# 重新排列列的顺序
+results_df <- results_df[, c("Variable", "W", "p.value")]
+
+# 计算校正后的p值（例如，使用Bonferroni校正）
+results_df$p.adjusted <- p.adjust(results_df$p.value, method = "bonferroni")
+
+print(results_df)
+
+# colSums(is.na(df2)) / nrow(df2)
+fit0 <-
+  lm(
+    SleepMinNight ~ .,
+    data = df3
+  )
+
+summary(fit0)
+anova(fit0)
+
+shapiro.test(df3$DaysMentHlthBad)
+
+library(dplyr)
+# 对df3中的每个数值型变量进行Shapiro-Wilk正态性检验
+results <- sapply(df3, function(x) {
+  if(is.numeric(x)) {
+    shapiro_test <- shapiro.test(x)
+    return(c(shapiro_test$statistic, shapiro_test$p.value))
+  } else {
+    return(c(NA, NA))
+  }
+})
+
+# 将结果转换为数据框，并命名列
+results_df <- as.data.frame(t(results))
+names(results_df) <- c("W", "p.value")
+
+# 添加变量名作为新列
+results_df$Variable <- rownames(results_df)
+
+# 重新排列列的顺序
+results_df <- results_df[, c("Variable", "W", "p.value")]
+
+# 计算校正后的p值（例如，使用Bonferroni校正）
+results_df$p.adjusted <- p.adjust(results_df$p.value, method = "bonferroni")
+
+print(results_df)
+

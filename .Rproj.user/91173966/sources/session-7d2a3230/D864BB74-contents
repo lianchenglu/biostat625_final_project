@@ -1,0 +1,27 @@
+library(NHANES)
+data(NHANES)
+df <- NHANES[NHANES$Age>=18&NHANES$Age<60,]
+colSums(is.na(df))/nrow(df)
+df <- df[,which(colSums(is.na(df))/nrow(df) < 0.3)]
+colSums(is.na(df))/nrow(df)
+dim(df)
+df$SleepTrouble
+
+table(is.na(df$SleepTrouble))
+
+
+df <- df[,c('DaysMentHlthBad','Depressed','LittleInterest','SleepTrouble',
+                'SleepHrsNight','MaritalStatus', 'HHIncome', 'Poverty',
+                'SleepHrsNight','AlcoholDay','PhysActiveDays')]
+colSums(is.na(df))/nrow(df)
+df <- df[,which(colSums(is.na(df))/nrow(df)<=0.2466)]
+
+
+library(impute)
+impute.knn(df)
+
+na.omit()
+fit0 <- lm(TotChol~BMI+UrineVol1+Diabetes+BPSysAve+BPDiaAve,data=df)
+summary(fit0)
+step(fit0)
+

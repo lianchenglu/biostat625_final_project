@@ -1,0 +1,227 @@
+rm(list = ls())
+gc()
+set.seed(123)  # For reproducibility
+setwd('/home/chenggg/BIOSTAT625/hw4')
+library(bigrquery)
+library(ggplot2)
+library(dplyr)
+bq_auth(path = "biostat625-405716-37a6f7939118.json")
+PROJECT_ID  <- "biostat625-405716"
+
+sql_query1 <- "
+   WITH RankedData AS (
+    SELECT
+      *,
+      ROW_NUMBER() OVER (PARTITION BY year ORDER BY RAND()) as rn
+    FROM
+      publicdata.samples.natality
+    WHERE
+      year BETWEEN 2001 AND 2008
+      AND weight_pounds > 0
+      AND mother_age > 0
+      AND plurality > 0
+      AND gestation_weeks > 0
+      AND month > 0
+)
+SELECT
+  weight_pounds,
+  year,
+  is_male,
+  mother_age,
+  plurality,
+  gestation_weeks,
+  cigarette_use,
+  alcohol_use
+FROM
+  RankedData
+WHERE
+  rn <= 1000
+"
+natality_data <- bq_table_download(bq_project_query(PROJECT_ID,
+                                                    query = sql_query1))
+head(natality_data)
+
+# impute missing value
+natality_data$cigarette_use[is.na(natality_data$cigarette_use)] <-
+  FALSE
+natality_data$alcohol_use[is.na(natality_data$alcohol_use)] <- FALSE
+
+# 1. Split the Data
+library(caret)
+library(randomForest)
+library(Metrics)
+splitIndex <-
+  createDataPartition(
+    natality_data$weight_pounds,
+    p = .5,
+    list = FALSE,
+    times = 1
+  )
+trainData <- natality_data[splitIndex,]
+testData <- natality_data[-splitIndex,]
+
+# 2. Train a Prediction Model
+# Using random forest for demonstration
+rf_model <- randomForest(weight_pounds ~ . - year, data = trainData)
+
+# Test the Model
+predictions <- predict(rf_model, testData)
+
+# calculate RMSE
+rmse_train <-
+  rmse(trainData$weight_pounds, predict(rf_model, trainData))
+rmse_test <- rmse(testData$weight_pounds, predictions)
+
+# print RMSE
+print(paste("Training RMSE:", rmse_train))
+print(paste("Testing RMSE:", rmse_test))
+
+
+get_distinct_values <- function(column_name) {
+  # Construct the SQL query
+  query <- paste0(
+    'SELECT ',
+    column_name,
+    ', ',
+    'COUNT(1) AS num_babies, ',
+    'AVG(weight_pounds) AS avg_wt ',
+    'FROM publicdata.samples.natality ',
+    'WHERE year BETWEEN 2001 AND 2008 ',
+    'AND weight_pounds > 0 ',
+    'AND mother_age > 0 ',
+    'AND plurality > 0 ',
+    'AND gestation_weeks > 0 ',
+    'AND month > 0 ',
+    'GROUP BY ',
+    column_name,
+    ' ',
+    'ORDER BY ',
+    column_name
+  )
+
+  # Execute the query and download the data
+  bq_table_download(bq_project_query(PROJECT_ID,
+                                     query = query))
+}
+
+df <- get_distinct_values("year")
+library(ggplot2)
+library(gridExtra)
+# Plot for Number of Babies
+plot_num_babies <- ggplot(df, aes(x = year, y = num_babies)) +
+  geom_line(color = "blue") +
+  labs(title = "Number of Babies per Year", y = "Number of Babies", x = "Year") +
+  theme_minimal()
+
+# Plot for Average Weight
+plot_avg_weight <- ggplot(df, aes(x = year, y = avg_wt)) +
+  geom_line(color = "red") +
+  labs(title = "Average Baby Weight per Year", y = "Average Weight (pounds)", x = "Year") +
+  theme_minimal()
+grid.arrange(plot_num_babies, plot_avg_weight, ncol = 1)
+
+
+# Problem 6
+library(DBI)
+PROJECT_ID  <- "biostat625-405716"
+con <- dbConnect(bigrquery::bigquery(),
+                 project = PROJECT_ID,
+                 billing = PROJECT_ID)
+# Construct the query using dplyr
+natality_data <- data.frame()
+for (current_year in 2001:2008) {
+  year_data <- tbl(con, "bigquery-publicdata.samples.natality") %>%
+    filter(
+      year == current_year,
+      weight_pounds > 0,
+      mother_age > 0,
+      plurality > 0,
+      gestation_weeks > 0,
+      month > 0
+    ) %>%
+    select(
+      weight_pounds,
+      year,
+      is_male,
+      mother_age,
+      plurality,
+      gestation_weeks,
+      cigarette_use,
+      alcohol_use
+    ) %>%
+    mutate(weight_pounds = round(weight_pounds, 2)) %>%
+    collect(n = 1000)
+  # row bind the data
+  natality_data <- rbind(natality_data, year_data)
+}
+head(natality_data)
+
+# impute missing value
+natality_data$cigarette_use[is.na(natality_data$cigarette_use)] <- FALSE
+natality_data$alcohol_use[is.na(natality_data$alcohol_use)] <- FALSE
+
+# 1. Split the Data
+library(caret)
+library(randomForest)
+library(Metrics)
+splitIndex <-
+  createDataPartition(
+    natality_data$weight_pounds,
+    p = .5,
+    list = FALSE,
+    times = 1
+  )
+trainData <- natality_data[splitIndex,]
+testData <- natality_data[-splitIndex,]
+
+# 2. Train a Prediction Model
+# Using random forest for demonstration
+rf_model <- randomForest(weight_pounds ~ . - year, data = trainData)
+
+# Test the Model
+predictions <- predict(rf_model, testData)
+
+# calculate RMSE
+rmse_train <-
+  rmse(trainData$weight_pounds, predict(rf_model, trainData))
+rmse_test <- rmse(testData$weight_pounds, predictions)
+
+# print RMSE
+print(paste("Training RMSE:", rmse_train))
+print(paste("Testing RMSE:", rmse_test))
+
+
+get_distinct_values <- function(column_name) {
+  tbl(con, "bigquery-public-data.samples.natality") %>%
+    filter(
+      year >= 2001,
+      year <= 2008,
+      weight_pounds > 0,
+      mother_age > 0,
+      plurality > 0,
+      gestation_weeks > 0,
+      month > 0
+    ) %>%
+    group_by(!!sym(column_name)) %>%
+    summarize(num_babies = n(),
+              avg_wt = mean(weight_pounds)) %>%
+    arrange(!!sym(column_name)) %>%
+    collect()
+}
+
+
+df <- get_distinct_values("year")
+library(ggplot2)
+library(gridExtra)
+# Plot for Number of Babies
+plot_num_babies <- ggplot(df, aes(x = year, y = num_babies)) +
+  geom_line(color = "blue") +
+  labs(title = "Number of Babies per Year", y = "Number of Babies", x = "Year") +
+  theme_minimal()
+
+# Plot for Average Weight
+plot_avg_weight <- ggplot(df, aes(x = year, y = avg_wt)) +
+  geom_line(color = "red") +
+  labs(title = "Average Baby Weight per Year", y = "Average Weight (pounds)", x = "Year") +
+  theme_minimal()
+grid.arrange(plot_num_babies, plot_avg_weight, ncol = 1)
