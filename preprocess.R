@@ -61,3 +61,16 @@ accession <- subset(accession, accession != "GSM1865231")
 # 创建数据框
 adult_child <- data.frame(accession, adult_bmi, child_bmi, adult_waist, child_waist, gender, age)
 
+library(data.table)
+# 读取数据
+y1 <- fread('GSE72556_series_matrix.txt', header = FALSE, fill = TRUE)
+y2 <- y1
+# 移除前65行的注释
+y1 <- tail(y2, -65)
+
+# 转置数据
+y1 <- transpose(y1)
+
+# 设置第一列为列名,第一行为行名,然后删除
+colnames(y1) <- as.character(y1[1, ])
+y1 <- y1[-1, ]
