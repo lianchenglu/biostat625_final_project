@@ -3,10 +3,10 @@ gc()
 library(data.table)
 # Set seed and working directory
 set.seed(1234)
-setwd('/home/chenggg/BIOSTAT625/project')
+# setwd('/home/chenggg/BIOSTAT625/project')
 
 # Read data
-GPL13534 <- fread('GPL13534-11288.txt')
+GPL13534 <- fread('data/GPL13534-11288.txt')
 # Efficient string splitting and data manipulation
 annotated_probe <-
   strsplit(GPL13534$UCSC_RefGene_Name, ';', fixed = TRUE)
@@ -21,7 +21,7 @@ annotated_probe <- unique(annotated_probe)
 annotated_probe <- as.matrix(annotated_probe)
 rm(GPL13534)
 gc()
-data <- read.delim('GSE72556_series_matrix.txt')
+data <- read.delim('data/GSE72556_series_matrix.txt')
 child_bmi <- data[709:757, ]
 child_bmi <-
   c(
@@ -104,7 +104,7 @@ adult_child <-
              gender,
              age)
 
-data <- read.delim('GSE72556_series_matrix.txt', comment.char = '!')
+data <- read.delim('data/GSE72556_series_matrix.txt', comment.char = '!')
 y1 <- as.matrix(t(data))
 rm(data)
 gc()
@@ -224,14 +224,14 @@ X <- scale(X)
 y <- as.factor(all$obesity_status)
 set.seed(123)
 # 使用交叉验证进行弹性网回归
-# alpha值在0（岭回归）和1（LASSO回归）之间
+# alpha值在0（岭回归）和1（LASSO回归）之???
 # 这里我们尝试一个中间值，例如0.5
 cv_fit <- cv.glmnet(X, y, alpha = 0.3, family = "binomial")
 
-# 查看最佳的lambda值
+# 查看最佳的lambda???
 best_lambda <- cv_fit$lambda.min
 
-# 拟合最终模型
+# 拟合最终模???
 final_model <-
   glmnet(X,
          y,
@@ -242,83 +242,22 @@ final_model <-
 # 提取模型系数
 coefficients <- coef(final_model, s = best_lambda)
 
-# 查看选入模型的变量
-# 系数不为零的变量被认为是选入模型的
+# 查看选入模型的变???
+# 系数不为零的变量被认为是选入模型???
 # 提取非零系数及其对应的变量名
 non_zero_coefficients <-
   coefficients[coefficients[, 1] != 0, , drop = FALSE]
 variable_names <- rownames(non_zero_coefficients)
 
-# 创建数据框
+# 创建数据???
 selected_genes_df <- data.frame(Gene = variable_names,
                                 Coefficient = non_zero_coefficients[, 1])
 dim(selected_genes_df)
 # print(selected_genes_df)
 
-# 首先，从 selected_genes_df 中移除截距项
+# First, remove the intercept item from selected_genes_df
 selected_genes_df <-
   selected_genes_df[selected_genes_df$Gene != "(Intercept)",]
-
-library(e1071)  # 用于计算MCC
-
-# # 初始化MCC记录
-# mcc_results <- c()
-#
-# # 逐步增加特征数量
-# for (i in 1:nrow(selected_genes_df)) {
-#   # 选择前i个特征
-#   selected_features <- head(selected_genes_df$Gene, i)
-#
-#   # 提取对应的特征数据
-#   X_subset <- X[, selected_features, drop = FALSE]
-#
-#   # 初始化临时MCC存储
-#   temp_mcc <- c()
-#
-#   # 对每个样本进行LOOCV
-#   for (j in 1:nrow(X_subset)) {
-#     # 创建训练和测试集
-#     train_X <- X_subset[-j, ]
-#     train_y <- y[-j]
-#     test_X <- X_subset[j, , drop = FALSE]
-#     test_y <- y[j]
-#
-#     # 训练模型
-#     model <- glm(train_y ~ ., data = data.frame(train_y, train_X), family = "binomial")
-#
-#     # 预测
-#     predictions <- predict(model, newdata = data.frame(test_X), type = "response")
-#     predicted_class <- ifelse(predictions > 0.5, levels(y)[2], levels(y)[1])
-#
-#     # 计算MCC
-#     cm <- table(Observed = test_y, Predicted = predicted_class)
-#     mcc <- mcc(cm[1,1], cm[1,2], cm[2,1], cm[2,2])
-#     temp_mcc <- c(temp_mcc, mcc)
-#   }
-#
-#   # 计算平均MCC
-#   avg_mcc <- mean(temp_mcc, na.rm = TRUE)
-#   mcc_results <- c(mcc_results, avg_mcc)
-# }
-#
-# # 找到MCC最高的特征子集
-# best_features_count <- which.max(mcc_results)
-# best_features <- head(selected_genes_df, best_features_count)
-#
-# # 打印最佳特征子集
-# print(best_features)
-#
-#
-# # 打印最佳特征子集
-# print(best_features)
-#
-# # 选择前N个最重要的特征
-# N <- 100  # 例如，选择前100个特征
-# top_genes <- head(selected_genes_df, N)
-#
-# # 打印结果
-# print(top_genes)
-
 
 # merge
 merged_data <-
@@ -348,7 +287,7 @@ ego <- enrichGO(
   gene         = entrez_ids,
   OrgDb        = org.Hs.eg.db,
   keyType      = "ENTREZID",
-  # "BP"(biological process), "CC"(cell components)，"MF"(molecular function)
+  # "BP"(biological process), "CC"(cell components)???"MF"(molecular function)
   ont          = "MF",
   pvalueCutoff = 0.1,
   pAdjustMethod = "BH",
@@ -361,5 +300,5 @@ barplot(ego)
 kk <- enrichKEGG(gene = entrez_ids,
                  organism = 'hsa',  # 人类的KEGG代码
                  pAdjustMethod = "BH",  # 调整p值的方法
-                 pvalueCutoff = 0.1)  # 显著性阈值
+                 pvalueCutoff = 0.1)  # 显著性阈???
 barplot(kk)
