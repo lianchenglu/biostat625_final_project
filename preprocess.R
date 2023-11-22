@@ -5,7 +5,7 @@ library(data.table)
 set.seed(1234)
 # setwd('/home/chenggg/BIOSTAT625/project')
 # Read data
-GPL13534 <- fread('GPL13534-11288.txt')
+GPL13534 <- fread('data/GPL13534-11288.txt')
 # Efficient string splitting and data manipulation
 annotated_probe <-
   strsplit(GPL13534$UCSC_RefGene_Name, ';', fixed = TRUE)
@@ -63,7 +63,7 @@ adult_child <- data.frame(accession, adult_bmi, child_bmi, adult_waist, child_wa
 
 library(data.table)
 # 读取数据
-y1 <- fread('GSE72556_series_matrix.txt', header = FALSE, fill = TRUE)
+y1 <- fread('data/GSE72556_series_matrix.txt', header = FALSE, fill = TRUE)
 y2 <- y1
 # 移除前65行的注释
 y1 <- tail(y2, -65)
