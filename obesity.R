@@ -224,14 +224,14 @@ X <- scale(X)
 y <- as.factor(all$obesity_status)
 set.seed(123)
 # 使用交叉验证进行弹性网回归
-# alpha值在0（岭回归）和1（LASSO回归）之???
+# The alpha value is between 0 (ridge regression) and 1 (LASSO regression)
 # 这里我们尝试一个中间值，例如0.5
 cv_fit <- cv.glmnet(X, y, alpha = 0.3, family = "binomial")
 
 # 查看最佳的lambda???
 best_lambda <- cv_fit$lambda.min
 
-# 拟合最终模???
+# Fits the final mode???
 final_model <-
   glmnet(X,
          y,
@@ -239,17 +239,17 @@ final_model <-
          lambda = best_lambda,
          family = "binomial")
 
-# 提取模型系数
+# Extraction model coefficient
 coefficients <- coef(final_model, s = best_lambda)
 
-# 查看选入模型的变???
-# 系数不为零的变量被认为是选入模型???
-# 提取非零系数及其对应的变量名
+# View the changes selected for the model
+# Variables whose coefficients are not zero are considered to be selected into the model
+# Extract non-zero coefficients and their corresponding variable names
 non_zero_coefficients <-
   coefficients[coefficients[, 1] != 0, , drop = FALSE]
 variable_names <- rownames(non_zero_coefficients)
 
-# 创建数据???
+# Create data frame
 selected_genes_df <- data.frame(Gene = variable_names,
                                 Coefficient = non_zero_coefficients[, 1])
 dim(selected_genes_df)
