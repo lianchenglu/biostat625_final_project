@@ -223,15 +223,14 @@ X <- as.matrix(all[, -1])
 X <- scale(X)
 y <- as.factor(all$obesity_status)
 set.seed(123)
-# 使用交叉验证进行弹性网回归
+# Elastic network regression using cross validation
 # The alpha value is between 0 (ridge regression) and 1 (LASSO regression)
-# 这里我们尝试一个中间值，例如0.5
 cv_fit <- cv.glmnet(X, y, alpha = 0.3, family = "binomial")
 
-# 查看最佳的lambda???
+# check best lambda
 best_lambda <- cv_fit$lambda.min
 
-# Fits the final mode???
+# Fits the final mode
 final_model <-
   glmnet(X,
          y,
@@ -276,7 +275,7 @@ library(clusterProfiler)
 library(org.Hs.eg.db)
 library(AnnotationDbi)
 genes <- merged_data$gene
-# 将基因名转换为Entrez ID
+# Convert the gene name to an Entrez ID
 entrez_ids <- mapIds(org.Hs.eg.db,
                      keys = genes,
                      column = "ENTREZID",
@@ -298,7 +297,7 @@ barplot(ego)
 
 
 kk <- enrichKEGG(gene = entrez_ids,
-                 organism = 'hsa',  # 人类的KEGG代码
-                 pAdjustMethod = "BH",  # 调整p值的方法
-                 pvalueCutoff = 0.1)  # 显著性阈???
+                 organism = 'hsa',  # human KEGG code
+                 pAdjustMethod = "BH",  
+                 pvalueCutoff = 0.1) 
 barplot(kk)
