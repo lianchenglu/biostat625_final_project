@@ -229,11 +229,12 @@ for (k in k_values) {
 library(ggplot2)
 
 k_values <- 1:15
+# best k value,generate from the previous code
 resultsForCompare <-
   c(39, 42, 42, 43, 43, 41, 41, 41, 43, 43, 43, 41, 41, 41, 41)
 
 data <- data.frame(K = k_values, Genes = resultsForCompare)
-
+#plot the result for the best k-values
 ggplot(data, aes(x = K, y = resultsForCompare)) +
   geom_line(color = 'blue', size = 1) +
   geom_point(color = 'black', size = 3) +
@@ -299,7 +300,7 @@ results <- list()
 
 ##########  'alpha' = alpha_val, 'enriched_genes' = ego,'enriched_kegg' = kk, 'dim_of_lasso' = dim(selected_genes_df))
 
-
+# start to find the best alpha_value for the ego and kk method
 for (alpha_val in seq(0.1, 1, by = 0.1)) {
   #alpha_val = 0.5
   cv_fit <-
@@ -307,8 +308,7 @@ for (alpha_val in seq(0.1, 1, by = 0.1)) {
   
   # Check the best lambda
   best_lambda <- cv_fit$lambda.min
-  exp(0.1670464)
-  log(0.1670464)
+  
   # Fits the final mode
   final_model <-
     glmnet(
@@ -384,27 +384,28 @@ for (alpha_val in seq(0.1, 1, by = 0.1)) {
     multiVals = "first"
   )
   
+  # enriched_genes method
   ego <- enrichGO(
     gene         = entrez_ids,
     OrgDb        = org.Hs.eg.db,
     keyType      = "ENTREZID",
     # BP(biological process), CC(cell components)MF(molecular function)
     ont          = "MF",
-    pvalueCutoff = 0.1,
+    pvalueCutoff = 0.1, # pvaluecutoff set by reference
     pAdjustMethod = "BH",
     qvalueCutoff = 0.2,
     readable     = TRUE
   )
-  
+  # enriched_kegg method
   kk <- enrichKEGG(
     gene = entrez_ids,
     organism = 'hsa',
     pAdjustMethod = "BH",
-    pvalueCutoff = 0.1
+    pvalueCutoff = 0.1 # pvaluecutoff set by reference
   )
   # barplot(ego)
   
-  
+  # save the data into the results
   results[[as.character(alpha_val)]] <-
     list(
       'alpha' = alpha_val,
@@ -450,7 +451,7 @@ for (i in seq_along(alpha_values)) {
   }
 }
 
-
+# plot the figure x is Alpha Value,y is Number of Enriched Terms.
 plot_data <- data.frame(alpha = alpha_values, terms = term_counts)
 
 ggplot(plot_data, aes(x = alpha, y = terms)) +
@@ -467,7 +468,7 @@ ggplot(plot_data, aes(x = alpha, y = terms)) +
        y = "Number of Enriched Terms")
 
 
-## barpolt for ego
+## plot the barplot for the ego and kk 
 
 barplot(best_ego <- results[[best_alpha]]$enriched_genes)
 
