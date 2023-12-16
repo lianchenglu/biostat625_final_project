@@ -1,6 +1,6 @@
 ---
 title: "Analyzing DNA Methylation in Saliva Samples to Identify Obesity-Related Genes in Latino Preschool Children"
-author: "Liancheng Wu, Haoyi Zheng, Yue Yu"
+author: "Liancheng Lu, Haoyi Zheng, Yue Yu"
 output:
   pdf_document: default
   md_document: default
